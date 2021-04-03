@@ -1,4 +1,4 @@
-#!/home/veri/PycharmProjects/pythonProject/venv/bin/python
+#!/home/veri/PycharmProjects/NumMethDGl/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

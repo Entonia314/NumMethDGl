@@ -1,4 +1,4 @@
-#!/home/veri/PycharmProjects/pythonProject/venv/bin/python
+#!/home/veri/PycharmProjects/NumMethDGl/venv/bin/python
 # EASY-INSTALL-ENTRY-SCRIPT: 'bokeh==2.3.0','console_scripts','bokeh'
 import re
 import sys

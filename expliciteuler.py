@@ -3,6 +3,8 @@
 import numpy as np
 from bokeh.plotting import figure, show
 
+h = 0.1
+
 
 def euler(f, y0, t0, t1, h):
     """
@@ -55,14 +57,13 @@ def f(t, y):
     return y
 
 
-y, t_list = euler_system([f], [1], 1, 4, 0.1)
+y, t_list = euler_system([f], [1], 1, 4, h)
 print('Annäherung: ', y)
 
-exact = [0] * (10)
-t = 1
-for k in range(30):
-    exact[k] = np.exp(t - 1)
-    t = t+0.1
+exact = []
+for t in t_list:
+    exact.append(np.exp(t - 1))
+
 print('Exakte Werte: ', exact)
 
 
