@@ -179,7 +179,7 @@ def runge_kutta(f, y0, t0, t1, h):
     for k in range(N):
         for i in range(len(y0)):
             k1 = f(t, y[:, k])[i]
-            k2 = f(t + h / 2, add(y[:, k], h * k1 / 2))[i]
+            k2 = f(t + 0.5*h, add(y[:, k], h * k1 / 2))[i]
             k3 = f(t + h, add(y[:, k], h * (-k1 + 2 * k2)))[i]
             y[i, k + 1] = y[i, k] + h / 6 * (k1 + 4 * k2 + k3)
             t = t + h
@@ -319,4 +319,4 @@ q52.line(s12, y522[0], legend_label="Adams-Bashforth", line_width=2, line_color=
 q52.line(s12, exakt_y2, legend_label="Exakt", line_width=2, line_color="pink")
 
 grid = gridplot([[p, p1, p2, p3, p4, p51, p52], [q, q1, q2, q3, q4, q51, q52]])
-#show(grid)
+show(grid)
