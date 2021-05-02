@@ -25,15 +25,15 @@ def finite_difference_BVP(f, gitter, ua, ub):
     dx = (b - a) / n
     x = gitter
 
-    b = np.zeros((n-1, 1)).ravel()
-    b[:] = f(x[1:n])
+    b_vector = np.zeros((n-1, 1)).ravel()
+    b_vector[:] = f(x[1:n])
 
     r = np.zeros((n-1, 1)).ravel()
     r[0] = ua
     r[-1] = ub
     r = r * (1 / dx) ** 2
 
-    b = b + r
+    b_vector = b_vector + r
 
     main_diag = -2 * np.ones((n-1, 1)).ravel()
     off_diag = 1 * np.ones((n-2, 1)).ravel()
@@ -42,14 +42,14 @@ def finite_difference_BVP(f, gitter, ua, ub):
     A = sparse.diags(diags, [0, -1, 1], shape=(a, a)).toarray()
     A = A * (1 / dx) ** 2
 
-    u = -np.linalg.solve(A, b)
+    u = -np.linalg.solve(A, b_vector)
     return u
 
 
 xf = np.linspace(a, b, 1001)
 y_exact = -0.5 * xf ** 2 + xf
 
-p = figure(title="Finite Differenzen für Randwertproblem: -u'' = 1", x_axis_label='x', y_axis_label='u(x)')
+p = figure(title="Finite Differenzen für Randwertproblem: -u''(x) = 1, u(0)=0, u(2)=0", x_axis_label='x', y_axis_label='u(x)')
 p.line(xf, y_exact, legend_label='Exakte Lösung', line_width=2, line_color='red')
 colours = ['green', 'purple', 'blue', 'yellow', 'pink', 'cyan', 'brown']
 

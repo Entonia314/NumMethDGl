@@ -18,38 +18,39 @@ def y_analytical(x):
     return -1/6 * x**3 + 7/6 * x + 1
 
 
-def finite_difference_BVP(f, gitter, ua, ub):
+def finite_elements_BVP(gitter, ua, ub):
     n = len(gitter) - 1
     a = gitter[0]
     b = gitter[-1]
-    dx = (b - a) / n
+    h = (b - a) / (n+1)
     x = gitter
 
     b_vector = np.zeros((n-1, 1)).ravel()
-    b_vector[:] = f(x[1:n])
+    for j in range(1, n):
+        b_vector[j-1] = (x[j-1]**3 - 3*(x[j]**2)*x[j-1] + 4*x[j]**3 + x[j+1]**3 - 3*(x[j]**2)*x[j+1]) / (6*h)
 
     r = np.zeros((n-1, 1)).ravel()
     r[0] = ua
     r[-1] = ub
-    r = r * (1 / dx) ** 2
+    r = r * (1 / h)
 
     b_vector = b_vector + r
 
-    main_diag = -2 * np.ones((n-1, 1)).ravel()
-    off_diag = 1 * np.ones((n-2, 1)).ravel()
+    main_diag = 2 * np.ones((n-1, 1)).ravel()
+    off_diag = -1 * np.ones((n-2, 1)).ravel()
     a = main_diag.shape[0]
     diags = [main_diag, off_diag, off_diag]
     A = sparse.diags(diags, [0, -1, 1], shape=(a, a)).toarray()
-    A = A * (1 / dx) ** 2
+    A = A * (1 / h)
 
-    u = -np.linalg.solve(A, b_vector)
+    u = np.linalg.solve(A, b_vector)
     return u
 
 
 xf = np.linspace(a, b, 1001)
 y_exact = -1/6 * xf**3 + 7/6 * xf + 1
 
-p = figure(title="Finite Differenzen für Randwertproblem: -u''(x) = x, u(0)=1, u(2)=2", x_axis_label='x', y_axis_label='u(x)')
+p = figure(title="Finite Elemente Methode für Randwertproblem: -u''(x) = x, u(0)=1, u(2)=2", x_axis_label='x', y_axis_label='u(x)')
 p.line(xf, y_exact, legend_label='Exakte Lösung', line_width=2, line_color='red')
 colours = ['green', 'purple', 'blue', 'yellow', 'pink', 'cyan', 'brown']
 
@@ -60,7 +61,7 @@ h_N = []
 i = 0
 for n in N:
     gitter = np.linspace(a, b, n + 1).transpose()
-    y = finite_difference_BVP(f, gitter, ua, ub)
+    y = finite_elements_BVP(gitter, ua, ub)
     x_N.append(gitter)
     u_N.append(y)
     h_N.append((b - a) / n)
