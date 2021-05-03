@@ -1,8 +1,10 @@
 import numpy as np
 from bokeh.plotting import figure, show
-from bokeh.layouts import row, column, gridplot
-from math import log10, log2, log
+from bokeh.layouts import gridplot
+from math import log
+from sympy import symbols, solve
 
+# Global parameters
 t0 = 0
 t1 = 10
 y0 = 1
@@ -10,12 +12,14 @@ h1 = 0.1
 h2 = 0.01
 
 
+# Function of the right side of the ODE
 def f(t, y):
     dy = [0] * len(y)
     dy[0] = -2 * t * y[0] ** 2
     return dy
 
 
+# Exact solution of the ODE
 def exakt(t):
     return 1 / (t**2 + 1)
 
@@ -70,7 +74,90 @@ def forward_euler2(f, y0, t0, t1, h):
     return y_list, t_list
 
 
+def newton_raphson(f, g, x0, e, N):
+    step = 1
+    flag = 1
+    condition = True
+    while condition:
+        if g(x0) == 0.0:
+            print('Divide by zero error!')
+            break
+        x1 = x0 - f(x0) / g(x0)
+        x0 = x1
+        step = step + 1
+        if step > N:
+            flag = 0
+            break
+        condition = abs(f(x1)) > e
+    if flag == 1:
+        return x1
+    else:
+        print('\nNot Convergent.')
+
+
 def backward_euler(f, y0, t0, t1, h):
+    """
+    Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
+    :param f: list of functions
+    :param y0: list of floats or ints, initial values y(t0)=y0
+    :param t0: float or int, start of interval for parameter t
+    :param t1: float or int, end of interval for parameter t
+    :param h: float or int, step-size
+    :return: two lists of floats, approximation of y at interval t0-t1 in step-size h and interval list
+    """
+    N = int(np.ceil((t1 - t0) / h))
+    t = t0
+    y = np.zeros((len(y0), N + 1))
+    t_list = [0] * (N + 1)
+    t_list[0] = t0
+    y[:, 0] = y0
+    for k in range(1, N + 1):
+        for i in range(len(y0)):
+            t = t + h
+
+            def equation(x):
+                return y[i, k-1] + h * (-2) * t * x ** 2 - x
+
+            def equation_diff(x):
+                return h * (-4) * t * x - 1
+
+            y[i, k] = newton_raphson(equation, equation_diff, y[i, k-1], 0.0001, 10)
+            t_list[k] = t
+    return y, t_list
+
+
+def backward_euler2(f, y0, t0, t1, h):
+    """
+    Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
+    :param f: list of functions
+    :param y0: list of floats or ints, initial values y(t0)=y0
+    :param t0: float or int, start of interval for parameter t
+    :param t1: float or int, end of interval for parameter t
+    :param h: float or int, step-size
+    :return: two lists of floats, approximation of y at interval t0-t1 in step-size h and interval list
+    """
+    N = int(np.ceil((t1 - t0) / h))
+    t = t0
+    y = np.zeros((len(y0), N + 1))
+    t_list = [0] * (N + 1)
+    t_list[0] = t0
+    y[:, 0] = y0
+    for k in range(1, N):
+        for i in range(len(y0)):
+            t = t + h
+            x = symbols('x')
+            expr = y[i, k-1] + h*f(t, [x])[i] - x
+            sol = solve(expr, x)
+            solution_dist = []
+            for solution in sol:
+                solution_dist.append(abs(solution-y[i, k-1]))
+            solution_index = solution_dist.index(min(solution_dist))
+            y[i, k] = sol[solution_index]
+            t_list[k + 1] = t
+    return y, t_list
+
+
+def backward_euler3(f, y0, t0, t1, h):
     """
     Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
     :param f: list of functions
@@ -98,6 +185,37 @@ def backward_euler(f, y0, t0, t1, h):
 
 
 def crank_nicolson(f, y0, t0, t1, h):
+    """
+    Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
+    :param f: list of functions
+    :param y0: list of floats or ints, initial values y(t0)=y0
+    :param t0: float or int, start of interval for parameter t
+    :param t1: float or int, end of interval for parameter t
+    :param h: float or int, step-size
+    :return: two lists of floats, approximation of y at interval t0-t1 in step-size h and interval list
+    """
+    N = int(np.ceil((t1 - t0) / h))
+    t = t0
+    y = np.zeros((len(y0), N + 1))
+    t_list = [0] * (N + 1)
+    t_list[0] = t0
+    y[:, 0] = y0
+    for k in range(1, N + 1):
+        for i in range(len(y0)):
+            t = t + h
+
+            def equation(x):
+                return y[i, k-1] + h/2 * (((-2) * t * y[i, k-1] ** 2) + ((-2) * t * x ** 2)) - x
+
+            def equation_diff(x):
+                return h/2 * (-4) * t * x - 1
+
+            y[i, k] = newton_raphson(equation, equation_diff, y[i, k-1], 0.0001, 10)
+            t_list[k] = t
+    return y, t_list
+
+
+def crank_nicolson2(f, y0, t0, t1, h):
     """
     Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
     :param f: list of functions
@@ -241,13 +359,14 @@ exakt_y2 = []
 for t in s12:
     exakt_y2.append(exakt(t))
 
+
 print('Lösungen bei t=5: Exakt: '+str(exakt(10)))
 print('Explizites Euler-Verfahren - h=0.1: '+str(y11[0][-1])+', h=0.01: '+str(y12[0][-1])+
       ', Fehlerordnung: '+str(log(abs((y11[0][-1]-exakt(10))/(y12[0][-1]-exakt(10))))/log(h1/h2)))
-print('Implizites Euler-Verfahren - h=0.1: '+str(y21[-1])+', h=0.01: '+str(y22[-1])+
-      ', Fehlerordnung: '+str(log(abs(y21[-1]-exakt(10))/abs(y22[-1]-exakt(10)))/log(h1/h2)))
-print('Cranc-Nicolson-Verfahren - h=0.1: '+str(y31[-1])+', h=0.01: '+str(y32[-1])+
-      ', Fehlerordnung: '+str(log(abs(y31[-1]-exakt(10))/abs(y32[-1]-exakt(10)))/log(h1/h2)))
+print('Implizites Euler-Verfahren - h=0.1: '+str(y21[0][-1])+', h=0.01: '+str(y22[0][-1])+
+      ', Fehlerordnung: '+str(log(abs(y21[0][-1]-exakt(10))/abs(y22[0][-1]-exakt(10)))/log(h1/h2)))
+print('Cranc-Nicolson-Verfahren - h=0.1: '+str(y31[0][-1])+', h=0.01: '+str(y32[0][-1])+
+      ', Fehlerordnung: '+str(log(abs(y31[0][-1]-exakt(10))/abs(y32[0][-1]-exakt(10)))/log(h1/h2)))
 print('Runge-Kutta-Verfahren - h=0.1: '+str(y41[0][-1])+', h=0.01: '+str(y42[0][-1])+
       ', Fehlerordnung: '+str(log(abs((y41[0][-1]-exakt(10))/(y42[0][-1]-exakt(10))))/log(h1/h2)))
 print('Adams-Bashforth-Verfahren (Startwerte: Expl. Euler) - h=0.1: '+str(y511[0][-1])+', h=0.01: '+str(y521[0][-1])+
@@ -258,15 +377,15 @@ print('Adams-Bashforth-Verfahren (Startwerte: Runge-Kutta) - h=0.1: '+str(y512[0
 
 p = figure(title="h = 0.1", x_axis_label='t', y_axis_label='y(t)')
 p.line(s11, y11[0], legend_label="Forward Euler", line_width=2, line_color="green")
-p.line(s21, y21, legend_label="Backward Euler", line_width=2, line_color="blue")
-p.line(s31, y31, legend_label="Cranc-Nicolson", line_width=2, line_color="purple")
+p.line(s21, y21[0], legend_label="Backward Euler", line_width=2, line_color="blue")
+p.line(s31, y31[0], legend_label="Cranc-Nicolson", line_width=2, line_color="purple")
 p.line(s41, y41[0], legend_label="Runge-Kutta Ord. 3", line_width=2, line_color="red")
 p.line(s512, y512[0], legend_label="Adam-Bashforth Ord. 3", line_width=2, line_color="cyan")
 
 q = figure(title="h = 0.01", x_axis_label='t', y_axis_label='y(t)')
 q.line(s12, y12[0], legend_label="Forward Euler", line_width=2, line_color="green")
-q.line(s22, y22, legend_label="Backward Euler", line_width=2, line_color="blue")
-q.line(s32, y32, legend_label="Cranc-Nicolson", line_width=2, line_color="purple")
+q.line(s22, y22[0], legend_label="Backward Euler", line_width=2, line_color="blue")
+q.line(s32, y32[0], legend_label="Cranc-Nicolson", line_width=2, line_color="purple")
 q.line(s42, y42[0], legend_label="Runge-Kutta Ord. 3", line_width=2, line_color="red")
 q.line(s522, y522[0], legend_label="Adam-Bashforth Ord. 3", line_width=2, line_color="cyan")
 
@@ -279,19 +398,19 @@ q1.line(s12, y12[0], legend_label="Forward Euler", line_width=2, line_color="gre
 q1.line(s12, exakt_y2, legend_label="Exakt", line_width=2, line_color="pink")
 
 p2 = figure(title="Backward Euler h = 0.1", x_axis_label='t', y_axis_label='y(t)')
-p2.line(s11, y21, legend_label="Backward Euler", line_width=2, line_color="blue")
+p2.line(s11, y21[0], legend_label="Backward Euler", line_width=2, line_color="blue")
 p2.line(s11, exakt_y1, legend_label="Exakt", line_width=2, line_color="pink")
 
 q2 = figure(title="Backward Euler h = 0.01", x_axis_label='t', y_axis_label='y(t)')
-q2.line(s12, y22, legend_label="Backward Euler", line_width=2, line_color="blue")
+q2.line(s12, y22[0], legend_label="Backward Euler", line_width=2, line_color="blue")
 q2.line(s12, exakt_y2, legend_label="Exakt", line_width=2, line_color="pink")
 
 p3 = figure(title="Crank-Nicolson h = 0.1", x_axis_label='t', y_axis_label='y(t)')
-p3.line(s11, y31, legend_label="Crank-Nicolson", line_width=2, line_color="purple")
+p3.line(s11, y31[0], legend_label="Crank-Nicolson", line_width=2, line_color="purple")
 p3.line(s11, exakt_y1, legend_label="Exakt", line_width=2, line_color="pink")
 
 q3 = figure(title="Crank-Nicolson h = 0.01", x_axis_label='t', y_axis_label='y(t)')
-q3.line(s12, y32, legend_label="Crank-Nicolson", line_width=2, line_color="purple")
+q3.line(s12, y32[0], legend_label="Crank-Nicolson", line_width=2, line_color="purple")
 q3.line(s12, exakt_y2, legend_label="Exakt", line_width=2, line_color="pink")
 
 p4 = figure(title="Runge-Kutta Ord. 3, h = 0.1", x_axis_label='t', y_axis_label='y(t)')
