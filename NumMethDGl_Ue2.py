@@ -23,6 +23,8 @@ def f(t, y):
 def exakt(t):
     return 1 / (t**2 + 1)
 
+# Implementation of some numerical methods to solve the ODE
+
 
 def forward_euler(f, y0, t0, t1, h):
     """
@@ -48,33 +50,16 @@ def forward_euler(f, y0, t0, t1, h):
     return y, t_list
 
 
-def forward_euler2(f, y0, t0, t1, h):
-    """
-    Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
-    :param f: list of functions
-    :param y0: list of floats or ints, initial values y(t0)=y0
-    :param t0: float or int, start of interval for parameter t
-    :param t1: float or int, end of interval for parameter t
-    :param h: float or int, step-size
-    :return: two lists of floats, approximation of y at interval t0-t1 in step-size h and interval list
-    """
-    n_ode = len(y0)
-    nh = int((t1 - t0) / h)
-    t = t0
-    y = y0
-    t_list = [t]
-    y_list = [y[0]]
-    for i in range(nh):
-        for j in range(n_ode):
-            y[j] = y[j] + h * f(t, y)[j]
-        t = t + h
-        t_list.append(t)
-        for j in range(len(y)):
-            y_list.append(y[j])
-    return y_list, t_list
-
-
 def newton_raphson(f, g, x0, e, N):
+    """
+    Numerical solver of the equation f(x) = 0
+    :param f: Function, left side of equation f(x) = 0 to solve
+    :param g: Function, derivative of f
+    :param x0: Float, initial guess
+    :param e: Float, tolerable error
+    :param N: Integer, maximal steps
+    :return:
+    """
     step = 1
     flag = 1
     condition = True
@@ -126,64 +111,6 @@ def backward_euler(f, y0, t0, t1, h):
     return y, t_list
 
 
-def backward_euler2(f, y0, t0, t1, h):
-    """
-    Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
-    :param f: list of functions
-    :param y0: list of floats or ints, initial values y(t0)=y0
-    :param t0: float or int, start of interval for parameter t
-    :param t1: float or int, end of interval for parameter t
-    :param h: float or int, step-size
-    :return: two lists of floats, approximation of y at interval t0-t1 in step-size h and interval list
-    """
-    N = int(np.ceil((t1 - t0) / h))
-    t = t0
-    y = np.zeros((len(y0), N + 1))
-    t_list = [0] * (N + 1)
-    t_list[0] = t0
-    y[:, 0] = y0
-    for k in range(1, N):
-        for i in range(len(y0)):
-            t = t + h
-            x = symbols('x')
-            expr = y[i, k-1] + h*f(t, [x])[i] - x
-            sol = solve(expr, x)
-            solution_dist = []
-            for solution in sol:
-                solution_dist.append(abs(solution-y[i, k-1]))
-            solution_index = solution_dist.index(min(solution_dist))
-            y[i, k] = sol[solution_index]
-            t_list[k + 1] = t
-    return y, t_list
-
-
-def backward_euler3(f, y0, t0, t1, h):
-    """
-    Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
-    :param f: list of functions
-    :param y0: list of floats or ints, initial values y(t0)=y0
-    :param t0: float or int, start of interval for parameter t
-    :param t1: float or int, end of interval for parameter t
-    :param h: float or int, step-size
-    :return: two lists of floats, approximation of y at interval t0-t1 in step-size h and interval list
-    """
-    n_ode = len(y0)
-    nh = int((t1 - t0) / h)
-    t = t0
-    y = y0
-    t_list = [t]
-    y_list = [y[0]]
-    for i in range(nh):
-        for j in range(n_ode):
-            y_derived = f(t + h, y)[j] / (1 + h)
-            y[j] = y[j] + h * y_derived
-        t = t + h
-        t_list.append(t)
-        for j in range(len(y)):
-            y_list.append(y[j])
-    return y_list, t_list
-
-
 def crank_nicolson(f, y0, t0, t1, h):
     """
     Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
@@ -213,33 +140,6 @@ def crank_nicolson(f, y0, t0, t1, h):
             y[i, k] = newton_raphson(equation, equation_diff, y[i, k-1], 0.0001, 10)
             t_list[k] = t
     return y, t_list
-
-
-def crank_nicolson2(f, y0, t0, t1, h):
-    """
-    Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
-    :param f: list of functions
-    :param y0: list of floats or ints, initial values y(t0)=y0
-    :param t0: float or int, start of interval for parameter t
-    :param t1: float or int, end of interval for parameter t
-    :param h: float or int, step-size
-    :return: two lists of floats, approximation of y at interval t0-t1 in step-size h and interval list
-    """
-    n_ode = len(y0)
-    nh = int((t1 - t0) / h)
-    t = t0
-    y = y0
-    t_list = [t]
-    y_list = [y[0]]
-    for i in range(nh):
-        for j in range(n_ode):
-            y_derived = f(t + h, y)[j] / (1 + h)
-            y[j] = y[j] + h / 2 * (y_derived + f(t, y)[j])
-        t = t + h
-        t_list.append(t)
-        for j in range(len(y)):
-            y_list.append(y[j])
-    return y_list, t_list
 
 
 def add(vector, scalar):
@@ -351,6 +251,8 @@ y521, s521 = adams_bashforth_3(f, [y0], t0, t1, h2, forward_euler(f, [y0], t0, t
 y522, s522 = adams_bashforth_3(f, [y0], t0, t1, h2, runge_kutta(f, [y0], t0, t1, h2))
 
 
+# Exact solution for plot
+
 exakt_y1 = []
 for t in s11:
     exakt_y1.append(exakt(t))
@@ -360,6 +262,7 @@ for t in s12:
     exakt_y2.append(exakt(t))
 
 
+# Printing the solutions at t=5 and the order of convergence
 print('Lösungen bei t=5: Exakt: '+str(exakt(10)))
 print('Explizites Euler-Verfahren - h=0.1: '+str(y11[0][-1])+', h=0.01: '+str(y12[0][-1])+
       ', Fehlerordnung: '+str(log(abs((y11[0][-1]-exakt(10))/(y12[0][-1]-exakt(10))))/log(h1/h2)))
@@ -374,6 +277,8 @@ print('Adams-Bashforth-Verfahren (Startwerte: Expl. Euler) - h=0.1: '+str(y511[0
 print('Adams-Bashforth-Verfahren (Startwerte: Runge-Kutta) - h=0.1: '+str(y512[0][-1])+', h=0.01: '+str(y522[0][-1])+
       ', Fehlerordnung: '+str(log(abs((y512[0][-1]-exakt(10))/(y522[0][-1]-exakt(10))))/log(h1/h2)))
 
+
+# Generating the plots
 
 p = figure(title="h = 0.1", x_axis_label='t', y_axis_label='y(t)')
 p.line(s11, y11[0], legend_label="Forward Euler", line_width=2, line_color="green")
