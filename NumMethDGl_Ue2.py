@@ -21,11 +21,10 @@ def f(t, y):
 
 # Exact solution of the ODE
 def exakt(t):
-    return 1 / (t**2 + 1)
+    return 1 / (t ** 2 + 1)
+
 
 # Implementation of some numerical methods to solve the ODE
-
-
 def forward_euler(f, y0, t0, t1, h):
     """
     Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
@@ -101,12 +100,12 @@ def backward_euler(f, y0, t0, t1, h):
             t = t + h
 
             def equation(x):
-                return y[i, k-1] + h * (-2) * t * x ** 2 - x
+                return y[i, k - 1] + h * (-2) * t * x ** 2 - x
 
             def equation_diff(x):
                 return h * (-4) * t * x - 1
 
-            y[i, k] = newton_raphson(equation, equation_diff, y[i, k-1], 0.0001, 10)
+            y[i, k] = newton_raphson(equation, equation_diff, y[i, k - 1], 0.0001, 10)
             t_list[k] = t
     return y, t_list
 
@@ -132,12 +131,12 @@ def crank_nicolson(f, y0, t0, t1, h):
             t = t + h
 
             def equation(x):
-                return y[i, k-1] + h/2 * (((-2) * t * y[i, k-1] ** 2) + ((-2) * t * x ** 2)) - x
+                return y[i, k - 1] + h / 2 * (((-2) * t * y[i, k - 1] ** 2) + ((-2) * t * x ** 2)) - x
 
             def equation_diff(x):
-                return h/2 * (-4) * t * x - 1
+                return h / 2 * (-4) * t * x - 1
 
-            y[i, k] = newton_raphson(equation, equation_diff, y[i, k-1], 0.0001, 10)
+            y[i, k] = newton_raphson(equation, equation_diff, y[i, k - 1], 0.0001, 10)
             t_list[k] = t
     return y, t_list
 
@@ -197,7 +196,7 @@ def runge_kutta(f, y0, t0, t1, h):
     for k in range(N):
         for i in range(len(y0)):
             k1 = f(t, y[:, k])[i]
-            k2 = f(t + 0.5*h, add(y[:, k], h * k1 / 2))[i]
+            k2 = f(t + 0.5 * h, add(y[:, k], h * k1 / 2))[i]
             k3 = f(t + h, add(y[:, k], h * (-k1 + 2 * k2)))[i]
             y[i, k + 1] = y[i, k] + h / 6 * (k1 + 4 * k2 + k3)
             t = t + h
@@ -221,8 +220,8 @@ def adams_bashforth_3(f, y0, t0, t1, h, g):
     t_list = [0] * (N + 1)
     t_list[0] = t0
     t_list[1] = t0 + h
-    t_list[2] = t0 + 2*h
-    t = t0 + 2*h
+    t_list[2] = t0 + 2 * h
+    t = t0 + 2 * h
     y[:, 0] = y0
     y_start, s = g
     y[:, 1] = y_start[:, 1]
@@ -230,7 +229,7 @@ def adams_bashforth_3(f, y0, t0, t1, h, g):
     for k in range(2, N):
         for i in range(len(y0)):
             y[i, k + 1] = y[i, k] + h * ((23 / 12 * f(t, y[:, k])[i]) - (16 / 12 * f(t - h, y[:, k - 1])[i]) + (
-                        5 / 12 * f(t - 2 * h, y[:, k - 2])[i]))
+                    5 / 12 * f(t - 2 * h, y[:, k - 2])[i]))
             t = t + h
             t_list[k + 1] = t
     return y, t_list
@@ -250,7 +249,6 @@ y42, s42 = runge_kutta(f, [y0], t0, t1, h2)
 y521, s521 = adams_bashforth_3(f, [y0], t0, t1, h2, forward_euler(f, [y0], t0, t1, h2))
 y522, s522 = adams_bashforth_3(f, [y0], t0, t1, h2, runge_kutta(f, [y0], t0, t1, h2))
 
-
 # Exact solution for plot
 
 exakt_y1 = []
@@ -261,22 +259,22 @@ exakt_y2 = []
 for t in s12:
     exakt_y2.append(exakt(t))
 
-
 # Printing the solutions at t=5 and the order of convergence
-print('Lösungen bei t=5: Exakt: '+str(exakt(10)))
-print('Explizites Euler-Verfahren - h=0.1: '+str(y11[0][-1])+', h=0.01: '+str(y12[0][-1])+
-      ', Fehlerordnung: '+str(log(abs((y11[0][-1]-exakt(10))/(y12[0][-1]-exakt(10))))/log(h1/h2)))
-print('Implizites Euler-Verfahren - h=0.1: '+str(y21[0][-1])+', h=0.01: '+str(y22[0][-1])+
-      ', Fehlerordnung: '+str(log(abs(y21[0][-1]-exakt(10))/abs(y22[0][-1]-exakt(10)))/log(h1/h2)))
-print('Cranc-Nicolson-Verfahren - h=0.1: '+str(y31[0][-1])+', h=0.01: '+str(y32[0][-1])+
-      ', Fehlerordnung: '+str(log(abs(y31[0][-1]-exakt(10))/abs(y32[0][-1]-exakt(10)))/log(h1/h2)))
-print('Runge-Kutta-Verfahren - h=0.1: '+str(y41[0][-1])+', h=0.01: '+str(y42[0][-1])+
-      ', Fehlerordnung: '+str(log(abs((y41[0][-1]-exakt(10))/(y42[0][-1]-exakt(10))))/log(h1/h2)))
-print('Adams-Bashforth-Verfahren (Startwerte: Expl. Euler) - h=0.1: '+str(y511[0][-1])+', h=0.01: '+str(y521[0][-1])+
-      ', Fehlerordnung: '+str(log(abs((y511[0][-1]-exakt(10))/(y521[0][-1]-exakt(10))))/log(h1/h2)))
-print('Adams-Bashforth-Verfahren (Startwerte: Runge-Kutta) - h=0.1: '+str(y512[0][-1])+', h=0.01: '+str(y522[0][-1])+
-      ', Fehlerordnung: '+str(log(abs((y512[0][-1]-exakt(10))/(y522[0][-1]-exakt(10))))/log(h1/h2)))
-
+print('Lösungen bei t=5: Exakt: ' + str(exakt(10)))
+print('Explizites Euler-Verfahren - h=0.1: ' + str(y11[0][-1]) + ', h=0.01: ' + str(y12[0][-1]) +
+      ', Fehlerordnung: ' + str(log(abs((y11[0][-1] - exakt(10)) / (y12[0][-1] - exakt(10)))) / log(h1 / h2)))
+print('Implizites Euler-Verfahren - h=0.1: ' + str(y21[0][-1]) + ', h=0.01: ' + str(y22[0][-1]) +
+      ', Fehlerordnung: ' + str(log(abs(y21[0][-1] - exakt(10)) / abs(y22[0][-1] - exakt(10))) / log(h1 / h2)))
+print('Cranc-Nicolson-Verfahren - h=0.1: ' + str(y31[0][-1]) + ', h=0.01: ' + str(y32[0][-1]) +
+      ', Fehlerordnung: ' + str(log(abs(y31[0][-1] - exakt(10)) / abs(y32[0][-1] - exakt(10))) / log(h1 / h2)))
+print('Runge-Kutta-Verfahren - h=0.1: ' + str(y41[0][-1]) + ', h=0.01: ' + str(y42[0][-1]) +
+      ', Fehlerordnung: ' + str(log(abs((y41[0][-1] - exakt(10)) / (y42[0][-1] - exakt(10)))) / log(h1 / h2)))
+print('Adams-Bashforth-Verfahren (Startwerte: Expl. Euler) - h=0.1: ' + str(y511[0][-1]) + ', h=0.01: ' + str(
+    y521[0][-1]) +
+      ', Fehlerordnung: ' + str(log(abs((y511[0][-1] - exakt(10)) / (y521[0][-1] - exakt(10)))) / log(h1 / h2)))
+print('Adams-Bashforth-Verfahren (Startwerte: Runge-Kutta) - h=0.1: ' + str(y512[0][-1]) + ', h=0.01: ' + str(
+    y522[0][-1]) +
+      ', Fehlerordnung: ' + str(log(abs((y512[0][-1] - exakt(10)) / (y522[0][-1] - exakt(10)))) / log(h1 / h2)))
 
 # Generating the plots
 
