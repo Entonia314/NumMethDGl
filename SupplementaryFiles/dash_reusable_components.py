@@ -42,7 +42,7 @@ def FormattedSlider(**kwargs):
 
 def NamedSlider(name, **kwargs):
     return html.Div(
-        style={'padding': '20px 10px 25px 4px'},
+        style={'padding': '10px 10px 10px 4px'},
         children=[
             html.P(f'{name}:'),
             html.Div(
@@ -69,7 +69,7 @@ def NamedDropdown(name, **kwargs):
 
 def NamedRadioItems(name, **kwargs):
     return html.Div(
-        style={'padding': '20px 10px 25px 4px'},
+        style={'padding': '10px 10px 10px 4px'},
         children=[
             html.P(children=f'{name}:'),
             dcc.RadioItems(**kwargs)
