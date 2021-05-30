@@ -461,7 +461,6 @@ def update_figure(model, h, t_end, scenario, m1, m2, m3, o1, o2, o3):
         return fig_expl, fig_impl, fig_rk
 
 
-
 def f(t, y, m, g):
     d0 = ((-g * m[0] * m[1] * (y[0] - y[1]) / np.linalg.norm(y[0] - y[1]) ** 3) +
           (-g * m[0] * m[2] * (y[0] - y[2]) / np.linalg.norm(y[0] - y[2]) ** 3)) / m[0]
@@ -651,6 +650,39 @@ def generate_figures(method, title, names, colours):
             xaxis=dict(autorange=True, zeroline=False, range=[-2, 2]),
             yaxis=dict(autorange=True, zeroline=False, range=[-2, 2]),
             title=title, hovermode="closest"),
+    )
+    return fig
+
+
+def generate_animations(method, title, names, colours):
+    y, t = method
+    fig = go.Figure(
+        data=[go.Scatter(x=y[0, :, 0], y=y[0, :, 1],
+                         name="frame",
+                         mode="lines",
+                         line=dict(width=2, color="blue")),
+              go.Scatter(x=y[0, :, 0], y=y[0, :, 1],
+                         name="curve",
+                         mode="lines",
+                         line=dict(width=2, color="blue"))
+              ],
+        layout=go.Layout(width=600, height=600,
+                         xaxis=dict(autorange=True, zeroline=False),
+                         yaxis=dict(autorange=True, zeroline=False),
+                         title="Moving Frenet Frame Along a Planar Curve",
+                         hovermode="closest",
+                         updatemenus=[dict(type="buttons",
+                                           buttons=[dict(label="Play",
+                                                         method="animate",
+                                                         args=[None])])]),
+
+        frames=[go.Frame(
+            data=[go.Scatter(
+                x=[xx[k], xend[k], None, xx[k], xnoe[k]],
+                y=[yy[k], yend[k], None, yy[k], ynoe[k]],
+                mode="lines",
+                line=dict(color="red", width=2))
+            ]) for k in range(N)]
     )
     return fig
 
