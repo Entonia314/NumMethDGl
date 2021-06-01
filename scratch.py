@@ -26,7 +26,7 @@ class LaxFriedrichs:
         self.xmin = 0
         self.xmax = 1
         self.dt = 0.009  # timestep
-        self.v = 1  # velocity
+        self.v = -1  # velocity
         self.xc = 0.25
         self.initializeDomain()
         self.initializeU()
@@ -37,7 +37,7 @@ class LaxFriedrichs:
         self.x = np.arange(self.xmin - self.dx, self.xmax + (2 * self.dx), self.dx)
 
     def initializeU(self):
-        u0 = np.exp(-200 * (self.x - self.xc) ** 2)
+        u0 = np.sin(2*np.pi*self.x)
         self.u = u0.copy()
         self.unp1 = u0.copy()
 
@@ -62,7 +62,7 @@ class LaxFriedrichs:
             self.u[0] = self.u[self.N + 1]
             self.u[self.N + 2] = self.u[1]
 
-            uexact = np.exp(-200 * (self.x - self.xc - self.v * tc) ** 2)
+            uexact = np.sin(self.x + tc)
 
             plt.plot(self.x, uexact, 'r', label="Exact solution")
             plt.plot(self.x, self.u, 'bo-', label="Lax-Friedrichs")
