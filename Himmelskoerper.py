@@ -7,7 +7,12 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from dash.dependencies import Input, Output, State
+from scipy.optimize import fsolve
 import SupplementaryFiles.dash_reusable_components as drc
+
+t_start = 0
+mass = [1, 1, 1]
+g = 1
 
 
 # Auxiliary function to multiply list with scalar
@@ -55,6 +60,7 @@ p72 = 0.588836
 inits7 = np.array([[[-1, 0], [p71, p72]],
                    [[1, 0], [p71, p72]],
                    [[0, 0], [-2 * p71, -2 * p72]]])
+
 
 # Initial conditions for real life models
 
@@ -107,11 +113,7 @@ inits8 = np.array([[rsun, vsun],
                    [rsat, vsat],
                    [rear, vear]])
 
-mass = [Msun, Msat, Mear]
 mass_szenario4 = [0, 0, 0.00000001]
-G = GG
-t_start = 0
-t_stop = 10
 
 method_dict = {'forward_euler': 'Explizites Euler-Verfahren', 'backward_euler': 'Implizites Euler-Verfahren'}
 init_dict = {1: inits1, 2: inits2, 3: inits3, 4: inits4, 5: inits5, 6: inits6, 7: inits7, 8: inits8}
@@ -120,6 +122,7 @@ r_dict = {'sun': rsun, 'sat': rsat, 'jup': rjup, 'ear': rear}
 v_dict = {'sun': vsun, 'sat': vsat, 'jup': vjup, 'ear': vear}
 colour_dict = {'sun': 'yellow', 'sat': 'grey', 'jup': 'orange', 'ear': 'blue'}
 name_dict = {'sun': 'Sonne', 'sat': 'Saturn', 'jup': 'Jupiter', 'ear': 'Erde'}
+
 
 # Here is were the dash app begins
 # Standard css style sheet recommended by Dash
@@ -138,7 +141,7 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
     html.Div(className="banner", style={'background-color': '#333399'}, children=[
         html.Div(className='container scalable', children=[
             html.H2(html.A(
-                'Das Drei-Körper-Problem',
+                'Himmelsmechanik',
                 href='',
                 style={
                     'text-decoration': 'none',
@@ -166,7 +169,6 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
                                         options=[
                                             {"label": "Simplifiziertes Modell", "value": 1},
                                             {"label": "Sonnensystem", "value": 2},
-                                            {"label": "Eigener Input", "value": 3},
                                         ],
                                         value=1,
                                         style={'margin': '10px 10px 10px 10px'},
@@ -206,178 +208,194 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
                                                15: '15', 20: '20', 25: '25', 30: '30'},
                                         value=10
                                     ),
-                                ]),
-                            dbc.Card(
-                                id='second-card',
-                                style={'margin': '10px 10px 10px 10px'},
-                                children=[
-                                    html.H5('Simplifiziertes Modell', style={'margin': '10px 10px 10px 10px'}),
-                                    html.Li('Modellannahme: g = 1', style={'margin': '5px 5px 5px 25px'}),
-                                    drc.NamedDropdown(
-                                        name='Szenario',
-                                        id='scenario-dropdown',
+                                    drc.NamedRadioItems(
+                                        name='Anzeigen',
+                                        id="error",
                                         options=[
-                                            {
-                                                'label': 'Szenario 1',
-                                                'value': 1
-                                            },
-                                            {
-                                                'label': 'Szenario 2',
-                                                'value': 2
-                                            },
-                                            {
-                                                'label': 'Szenario 3',
-                                                'value': 3
-                                            },
-                                            {
-                                                'label': 'Szenario 4',
-                                                'value': 4
-                                            },
-                                            {
-                                                'label': 'Szenario 5',
-                                                'value': 5
-                                            },
-                                            {
-                                                'label': 'Szenario 6',
-                                                'value': 6
-                                            },
-                                            {
-                                                'label': 'Szenario 7',
-                                                'value': 7
-                                            },
-                                            {
-                                                'label': 'Szenario 8',
-                                                'value': 8
-                                            },
+                                            {"label": "Bahnen", "value": 1},
+                                            {"label": "Fehler in Vergleich zu Runge-Kutta", "value": 2},
                                         ],
-                                        clearable=False,
-                                        searchable=False,
                                         value=1,
+                                        style={'margin': '10px 10px 10px 10px'},
                                     ),
-                                    drc.NamedSlider(
-                                        name='Masse von Objekt 1',
-                                        id='simple_mass1',
-                                        min=0.01,
-                                        max=3,
-                                        step=0.00001,
-                                        marks={0.00001: '0.00001', 0.5: '0.5', 1: '1',
-                                               1.5: '1.5', 2: '2', 2.5: '2.5', 3.0: '3.0'},
-                                        value=1
-                                    ),
-                                    drc.NamedSlider(
-                                        name='Masse von Objekt 2',
-                                        id='simple_mass2',
-                                        min=0.01,
-                                        max=3,
-                                        step=0.00001,
-                                        marks={0.00001: '0.00001', 0.5: '0.5', 1: '1',
-                                               1.5: '1.5', 2: '2', 2.5: '2.5', 3.0: '3.0'},
-                                        value=1
-                                    ),
-                                    drc.NamedSlider(
-                                        name='Masse von Objekt 3',
-                                        id='simple_mass3',
-                                        min=0.01,
-                                        max=3,
-                                        step=0.00001,
-                                        marks={0.00001: '0.00001', 0.5: '0.5', 1: '1',
-                                               1.5: '1.5', 2: '2', 2.5: '2.5', 3.0: '3.0'},
-                                        value=1
-                                    )]),
-                            dbc.Card(
-                                id='third-card',
-                                style={'margin': '10px 10px 10px 10px'},
-                                children=[
-                                    html.H5('Sonnensystem', style={'margin': '10px 10px 10px 10px'}),
-                                    drc.NamedDropdown(
-                                        name='Objekt 1',
-                                        id='object1-dropdown',
-                                        options=[
-                                            {
-                                                'label': 'Sonne',
-                                                'value': 'sun'
-                                            },
-                                            {
-                                                'label': 'Erde',
-                                                'value': 'ear'
-                                            },
-                                            {
-                                                'label': 'Mond',
-                                                'value': 'moo'
-                                            },
-                                            {
-                                                'label': 'Saturn',
-                                                'value': 'sat'
-                                            },
-                                            {
-                                                'label': 'Jupiter',
-                                                'value': 'jup'
-                                            },
+                                ]),
+                            dbc.Tabs([
+                                dbc.Tab(label="Simplifiziertes Modell", children=[
+                                    dbc.Card(
+                                        id='second-card',
+                                        style={'margin': '10px 10px 10px 10px'},
+                                        children=[
+                                            html.H5('Simplifiziertes Modell', style={'margin': '10px 10px 10px 10px'}),
+                                            html.Li('Modellannahme: g = 1', style={'margin': '5px 5px 5px 25px'}),
+                                            drc.NamedDropdown(
+                                                name='Szenario',
+                                                id='scenario-dropdown',
+                                                options=[
+                                                    {
+                                                        'label': 'Szenario 1',
+                                                        'value': 1
+                                                    },
+                                                    {
+                                                        'label': 'Szenario 2',
+                                                        'value': 2
+                                                    },
+                                                    {
+                                                        'label': 'Szenario 3',
+                                                        'value': 3
+                                                    },
+                                                    {
+                                                        'label': 'Szenario 4',
+                                                        'value': 4
+                                                    },
+                                                    {
+                                                        'label': 'Szenario 5',
+                                                        'value': 5
+                                                    },
+                                                    {
+                                                        'label': 'Szenario 6',
+                                                        'value': 6
+                                                    },
+                                                    {
+                                                        'label': 'Szenario 7',
+                                                        'value': 7
+                                                    },
+                                                    {
+                                                        'label': 'Szenario 8',
+                                                        'value': 8
+                                                    },
+                                                ],
+                                                clearable=False,
+                                                searchable=False,
+                                                value=1,
+                                            ),
+                                            drc.NamedSlider(
+                                                name='Masse von Objekt 1',
+                                                id='simple_mass1',
+                                                min=0.01,
+                                                max=3,
+                                                step=0.00001,
+                                                marks={0.00001: '0.00001', 0.5: '0.5', 1: '1',
+                                                       1.5: '1.5', 2: '2', 2.5: '2.5', 3.0: '3.0'},
+                                                value=1
+                                            ),
+                                            drc.NamedSlider(
+                                                name='Masse von Objekt 2',
+                                                id='simple_mass2',
+                                                min=0.01,
+                                                max=3,
+                                                step=0.00001,
+                                                marks={0.00001: '0.00001', 0.5: '0.5', 1: '1',
+                                                       1.5: '1.5', 2: '2', 2.5: '2.5', 3.0: '3.0'},
+                                                value=1
+                                            ),
+                                            drc.NamedSlider(
+                                                name='Masse von Objekt 3',
+                                                id='simple_mass3',
+                                                min=0.01,
+                                                max=3,
+                                                step=0.00001,
+                                                marks={0.00001: '0.00001', 0.5: '0.5', 1: '1',
+                                                       1.5: '1.5', 2: '2', 2.5: '2.5', 3.0: '3.0'},
+                                                value=1
+                                            ),
+                                        ])],
+                                        ),
+                                dbc.Tab(label="Sonnensystem", children=[
+                                    dbc.Card(
+                                        id='third-card',
+                                        style={'margin': '10px 10px 10px 10px'},
+                                        children=[
+                                            html.H5('Sonnensystem', style={'margin': '10px 10px 10px 10px'}),
+                                            drc.NamedDropdown(
+                                                name='Objekt 1',
+                                                id='object1-dropdown',
+                                                options=[
+                                                    {
+                                                        'label': 'Sonne',
+                                                        'value': 'sun'
+                                                    },
+                                                    {
+                                                        'label': 'Erde',
+                                                        'value': 'ear'
+                                                    },
+                                                    {
+                                                        'label': 'Mond',
+                                                        'value': 'moo'
+                                                    },
+                                                    {
+                                                        'label': 'Saturn',
+                                                        'value': 'sat'
+                                                    },
+                                                    {
+                                                        'label': 'Jupiter',
+                                                        'value': 'jup'
+                                                    },
+                                                ],
+                                                clearable=False,
+                                                searchable=False,
+                                                value='sun',
+                                            ),
+                                            drc.NamedDropdown(
+                                                name='Objekt 2',
+                                                id='object2-dropdown',
+                                                options=[
+                                                    {
+                                                        'label': 'Sonne',
+                                                        'value': 'sun'
+                                                    },
+                                                    {
+                                                        'label': 'Erde',
+                                                        'value': 'ear'
+                                                    },
+                                                    {
+                                                        'label': 'Mond',
+                                                        'value': 'moo'
+                                                    },
+                                                    {
+                                                        'label': 'Saturn',
+                                                        'value': 'sat'
+                                                    },
+                                                    {
+                                                        'label': 'Jupiter',
+                                                        'value': 'jup'
+                                                    },
+                                                ],
+                                                clearable=False,
+                                                searchable=False,
+                                                value='ear',
+                                            ),
+                                            drc.NamedDropdown(
+                                                name='Objekt 3',
+                                                id='object3-dropdown',
+                                                options=[
+                                                    {
+                                                        'label': 'Sonne',
+                                                        'value': 'sun'
+                                                    },
+                                                    {
+                                                        'label': 'Erde',
+                                                        'value': 'ear'
+                                                    },
+                                                    {
+                                                        'label': 'Mond',
+                                                        'value': 'moo'
+                                                    },
+                                                    {
+                                                        'label': 'Saturn',
+                                                        'value': 'sat'
+                                                    },
+                                                    {
+                                                        'label': 'Jupiter',
+                                                        'value': 'jup'
+                                                    },
+                                                ],
+                                                clearable=False,
+                                                searchable=False,
+                                                value='jup',
+                                            ),
                                         ],
-                                        clearable=False,
-                                        searchable=False,
-                                        value='sun',
                                     ),
-                                    drc.NamedDropdown(
-                                        name='Objekt 2',
-                                        id='object2-dropdown',
-                                        options=[
-                                            {
-                                                'label': 'Sonne',
-                                                'value': 'sun'
-                                            },
-                                            {
-                                                'label': 'Erde',
-                                                'value': 'ear'
-                                            },
-                                            {
-                                                'label': 'Mond',
-                                                'value': 'moo'
-                                            },
-                                            {
-                                                'label': 'Saturn',
-                                                'value': 'sat'
-                                            },
-                                            {
-                                                'label': 'Jupiter',
-                                                'value': 'jup'
-                                            },
-                                        ],
-                                        clearable=False,
-                                        searchable=False,
-                                        value='ear',
-                                    ),
-                                    drc.NamedDropdown(
-                                        name='Objekt 3',
-                                        id='object3-dropdown',
-                                        options=[
-                                            {
-                                                'label': 'Sonne',
-                                                'value': 'sun'
-                                            },
-                                            {
-                                                'label': 'Erde',
-                                                'value': 'ear'
-                                            },
-                                            {
-                                                'label': 'Mond',
-                                                'value': 'moo'
-                                            },
-                                            {
-                                                'label': 'Saturn',
-                                                'value': 'sat'
-                                            },
-                                            {
-                                                'label': 'Jupiter',
-                                                'value': 'jup'
-                                            },
-                                        ],
-                                        clearable=False,
-                                        searchable=False,
-                                        value='jup',
-                                    ),
-                                ],
-                            ),
+                                ])]),
                         ],
                             width=3),
                         dbc.Col(children=[
@@ -419,6 +437,7 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
     Output(component_id='expl-euler', component_property='figure'),
     Output(component_id='impl-euler', component_property='figure'),
     Output(component_id='runge-kutta', component_property='figure'),
+    Output(component_id='corr-pred', component_property='figure'),
     Input(component_id='radios', component_property='value'),
     Input(component_id='h-dropdown', component_property='value'),
     Input(component_id='time', component_property='value'),
@@ -431,47 +450,81 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
     Input(component_id='object3-dropdown', component_property='value')
 )
 def update_figure(model, h, t_end, scenario, m1, m2, m3, o1, o2, o3):
+    global mass
+    global g
     if model == 1:
         names = ['Objekt 1', 'Objekt 2', 'Objekt 3']
         colours = ['red', 'blue', 'violet']
         init_data = init_dict[scenario]
         mass = [m1, m2, m3]
         g = 1
-        fig_expl = generate_figures(forward_euler(f, init_data, t_start, t_end, h, mass, g), 'Explizites Euler-Verfahren', names, colours)
-        fig_rk = generate_figures(runge_kutta(f, init_data, t_start, t_end, h, mass, g), 'Runge-Kutta-Verfahren der Stufe 3', names, colours)
+        fig_expl = generate_figures(forward_euler(f, init_data, t_start, t_end, h), 'Explizites Euler-Verfahren', names,
+                                    colours)
+        fig_rk = generate_figures(runge_kutta(f, init_data, t_start, t_end, h), 'Runge-Kutta-Verfahren der Stufe 3',
+                                  names, colours)
         try:
-            fig_impl = generate_figures(backward_euler1(f, init_data, t_start, t_end, h, mass, g), 'Implizites Euler-Verfahren', names, colours)
+            fig_impl = generate_figures(backward_euler1(f, init_data, t_start, t_end, h), 'Implizites Euler-Verfahren',
+                                        names, colours)
         except:
             fig_impl = fig_not_convergent('Implizites Euler-Verfahren')
-        return fig_expl, fig_impl, fig_rk
+        try:
+            fig_precor = generate_figures(predictor_corrector(f, init_data, t_start, t_end, h),
+                                          'Prädiktor-Korrektor-Verfahren',
+                                          names, colours)
+        except:
+            fig_precor = fig_not_convergent('Prädiktor-Korrektor-Verfahren')
+        return fig_expl, fig_impl, fig_rk, fig_precor
     elif model == 2:
         g = GG
         names = [name_dict[o1], name_dict[o2], name_dict[o3]]
         colours = [colour_dict[o1], colour_dict[o2], colour_dict[o3]]
         mass = np.array([mass_dict[o1], mass_dict[o2], mass_dict[o3]])
         init_data = np.array([[r_dict[o1], v_dict[o1]], [r_dict[o2], v_dict[o2]], [r_dict[o3], v_dict[o3]]])
-        fig_expl = generate_figures(forward_euler(f, init_data, t_start, t_end, h, mass, g),
+        fig_expl = generate_figures(forward_euler(f, init_data, t_start, t_end, h),
                                     'Explizites Euler-Verfahren', names, colours)
-        fig_rk = generate_figures(runge_kutta(f, init_data, t_start, t_end, h, mass, g),
+        fig_rk = generate_figures(runge_kutta(f, init_data, t_start, t_end, h),
                                   'Runge-Kutta-Verfahren der Stufe 3', names, colours)
         try:
-            fig_impl = generate_figures(backward_euler1(f, init_data, t_start, t_end, h, mass, g), 'Implizites Euler-Verfahren', names, colours)
+            fig_impl = generate_figures(backward_euler1(f, init_data, t_start, t_end, h), 'Implizites Euler-Verfahren',
+                                        names, colours)
         except:
             fig_impl = fig_not_convergent('Implizites Euler-Verfahren')
-        return fig_expl, fig_impl, fig_rk
+        try:
+            fig_precor = generate_figures(predictor_corrector(f, init_data, t_start, t_end, h),
+                                          'Prädiktor-Korrektor-Verfahren',
+                                          names, colours)
+        except:
+            fig_precor = fig_not_convergent('Prädiktor-Korrektor-Verfahren')
+        return fig_expl, fig_impl, fig_rk, fig_precor
 
 
-def f(t, y, m, g):
-    d0 = ((-g * m[0] * m[1] * (y[0] - y[1]) / np.linalg.norm(y[0] - y[1]) ** 3) +
-          (-g * m[0] * m[2] * (y[0] - y[2]) / np.linalg.norm(y[0] - y[2]) ** 3)) / m[0]
-    d1 = ((-g * m[1] * m[2] * (y[1] - y[2]) / np.linalg.norm(y[1] - y[2]) ** 3) + (
-            -g * m[1] * m[0] * (y[1] - y[0]) / np.linalg.norm(y[1] - y[0]) ** 3)) / m[1]
-    d2 = ((-g * m[2] * m[0] * (y[2] - y[0]) / np.linalg.norm(y[2] - y[0]) ** 3) + (
-            -g * m[2] * m[1] * (y[2] - y[1]) / np.linalg.norm(y[2] - y[1]) ** 3)) / m[2]
+def f(t, y):
+    d0 = ((-g * mass[0] * mass[1] * (y[0] - y[1]) / np.linalg.norm(y[0] - y[1]) ** 3) +
+          (-g * mass[0] * mass[2] * (y[0] - y[2]) / np.linalg.norm(y[0] - y[2]) ** 3)) / mass[0]
+    d1 = ((-g * mass[1] * mass[2] * (y[1] - y[2]) / np.linalg.norm(y[1] - y[2]) ** 3) + (
+            -g * mass[1] * mass[0] * (y[1] - y[0]) / np.linalg.norm(y[1] - y[0]) ** 3)) / mass[1]
+    d2 = ((-g * mass[2] * mass[0] * (y[2] - y[0]) / np.linalg.norm(y[2] - y[0]) ** 3) + (
+            -g * mass[2] * mass[1] * (y[2] - y[1]) / np.linalg.norm(y[2] - y[1]) ** 3)) / mass[2]
     return np.array([d0, d1, d2])
 
 
-def forward_euler(f, y0, t0, t1, h, m, g):
+def flong(y):
+    d00 = ((-g * mass[0] * mass[1] * (y[0] - y[2]) / np.linalg.norm([y[0] - y[2], y[1] - y[3]]) ** 3) +
+           (-g * mass[0] * mass[2] * (y[0] - y[4]) / np.linalg.norm([y[0] - y[4], y[1] - y[5]]) ** 3)) / mass[0]
+    d01 = ((-g * mass[0] * mass[1] * (y[1] - y[3]) / np.linalg.norm([y[0] - y[2], y[1] - y[3]]) ** 3) + (
+            -g * mass[0] * mass[2] * (y[1] - y[5]) / np.linalg.norm([y[0] - y[4], y[1] - y[5]]) ** 3)) / mass[0]
+    d10 = ((-g * mass[1] * mass[2] * (y[2] - y[4]) / np.linalg.norm([y[2] - y[4], y[3] - y[5]]) ** 3) + (
+            -g * mass[1] * mass[0] * (y[2] - y[0]) / np.linalg.norm([y[0] - y[2], y[1] - y[3]]) ** 3)) / mass[1]
+    d11 = ((-g * mass[1] * mass[2] * (y[3] - y[5]) / np.linalg.norm([y[2] - y[4], y[3] - y[5]]) ** 3) + (
+            -g * mass[1] * mass[0] * (y[3] - y[1]) / np.linalg.norm([y[0] - y[2], y[1] - y[3]]) ** 3)) / mass[1]
+    d20 = ((-g * mass[2] * mass[0] * (y[4] - y[0]) / np.linalg.norm([y[0] - y[4], y[1] - y[5]]) ** 3) + (
+            -g * mass[2] * mass[1] * (y[4] - y[2]) / np.linalg.norm([y[2] - y[4], y[3] - y[5]]) ** 3)) / mass[2]
+    d21 = ((-g * mass[2] * mass[0] * (y[5] - y[1]) / np.linalg.norm([y[0] - y[4], y[1] - y[5]]) ** 3) + (
+            -g * mass[2] * mass[1] * (y[5] - y[3]) / np.linalg.norm([y[2] - y[4], y[3] - y[5]]) ** 3)) / mass[2]
+    return np.array([d00, d01, d10, d11, d20, d21])
+
+
+def forward_euler(f, y0, t0, t1, h):
     """
     Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
     :param f: list of functions
@@ -492,13 +545,13 @@ def forward_euler(f, y0, t0, t1, h, m, g):
     for k in range(N):
         for i in range(len(y0)):
             y[i, k + 1, :] = y[i, k, :] + h * v[i, k, :]
-            v[i, k + 1, :] = v[i, k, :] + h * f(t, y[:, k, :], m, g)[i]
-            t = t + h
-            t_list[k + 1] = t
+            v[i, k + 1, :] = v[i, k, :] + h * f(t, y[:, k, :])[i]
+        t = t + h
+        t_list[k + 1] = t
     return y, t
 
 
-def runge_kutta(f, y0, t0, t1, h, m, g):
+def runge_kutta(f, y0, t0, t1, h):
     """
     Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
     :param f: list of functions
@@ -518,17 +571,48 @@ def runge_kutta(f, y0, t0, t1, h, m, g):
     y[:, 0, :] = y0[:, 0, :]
     for k in range(N):
         for i in range(len(y0)):
-            k1 = f(t, y[:, k, :], m, g)[i]
-            k2 = f(t + 0.5 * h, (y[:, k, :] + h * k1 / 2), m, g)[i]
-            k3 = f(t + h, (y[:, k, :] + h * (-k1 + 2 * k2)), m, g)[i]
+            k1 = f(t, y[:, k, :])[i]
+            k2 = f(t + 0.5 * h, (y[:, k, :] + h * k1 / 2))[i]
+            k3 = f(t + h, (y[:, k, :] + h * (-k1 + 2 * k2)))[i]
             v[i, k + 1] = v[i, k, :] + h / 6 * (k1 + 4 * k2 + k3)
             k12 = v[i, k, :]
             k22 = v[i, k, :] + h * k1 / 2
             k32 = v[i, k, :] + h * (-k1 + 2 * k2)
             y[i, k + 1] = y[i, k, :] + h / 6 * (k12 + 4 * k22 + k32)
-            t = t + h
-            t_list[k + 1] = t
+        t = t + h
+        t_list[k + 1] = t
     return y, t_list
+
+
+def backward_euler_equation(y, yn, h, f):
+    ret = y - yn - h * f(y)
+    return ret
+
+
+def backward_euler_scipy(f, y0, t0, t1, h):
+    N = int(np.floor((t1 - t0) / h))
+    t = t0
+    v = np.zeros((N + 1, 6))
+    y = np.zeros((N + 1, 6))
+    y_start = y0[:, 0, :]
+    v_start = y0[:, 1, :]
+    y0_reshape = y_start.reshape(6, )
+    v0_reshape = v_start.reshape(6, )
+    t_list = [0] * (N + 1)
+    t_list[0] = t0
+    v[0, :] = v0_reshape
+    y[0, :] = y0_reshape
+
+    for k in range(N):
+        v[k + 1, :] = fsolve(backward_euler_equation, y[k, :], (y[k, :], h, flong))
+        y[k + 1, :] = y[k, :] + h * v[k, :]
+        t = t + h
+        t_list[k + 1] = t
+
+    y_ret = np.zeros((len(y0), N + 1, 2))
+    y_ret[:, :, 0] = y[:, ::2].transpose()
+    y_ret[:, :, 1] = y[:, 1::2].transpose()
+    return y_ret, t_list
 
 
 def newton_raphson(f, g, x0, e, N):
@@ -561,7 +645,7 @@ def newton_raphson(f, g, x0, e, N):
         print('\nNot Convergent.')
 
 
-def backward_euler1(f, y0, t0, t1, h, m, g):
+def backward_euler1(f, y0, t0, t1, h):
     """
     Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
     :param f: list of functions
@@ -582,13 +666,13 @@ def backward_euler1(f, y0, t0, t1, h, m, g):
     for k in range(1, N + 1):
 
         for i in range(len(y0)):
-            t = t + h
 
             def fixpoint(x):
                 terms = []
                 for j in range(len(x)):
                     if j != i:
-                        term = (-g * m[0] * m[1] * (x[i, :] - x[j, :]) / np.linalg.norm(x[i, :] - x[j, :]) ** 3) / m[i]
+                        term = (-g * mass[0] * mass[1] * (x[i, :] - x[j, :]) / np.linalg.norm(x[i, :] - x[j, :]) ** 3) / \
+                               mass[i]
                         terms.append(term)
 
                 return v[i, k - 1, :] + h * (terms[0] + terms[1]) - x[i, :]
@@ -597,15 +681,67 @@ def backward_euler1(f, y0, t0, t1, h, m, g):
                 terms = []
                 for j in range(len(x)):
                     if j != i:
-                        term = (g * m[0] * m[1] * (
+                        term = (g * mass[0] * mass[1] * (
                                 2 * x[i, :] ** 2 - 3 * x[i, :] * x[j, :] + x[j, :] ** 2) / np.linalg.norm(
-                            x[i, :] - x[j, :]) ** (5 / 2)) / m[i]
+                            x[i, :] - x[j, :]) ** (5 / 2)) / mass[i]
                         terms.append(term)
                 return h * (terms[0] + terms[1]) - 1
 
-            v[i, k, :] = newton_raphson(fixpoint, fixpoint_deriv, y[:, k - 1, :], 0.0001, 20)[i, :]
+            v[i, k, :] = newton_raphson(fixpoint, fixpoint_deriv, y[:, k - 1, :], 0.0001, 30)[i, :]
             y[i, k, :] = y[i, k - 1, :] + h * v[i, k - 1, :]
-            t_list[k] = t
+        t = t + h
+        t_list[k] = t
+    return y, t_list
+
+
+def predictor_corrector(f, y0, t0, t1, h):
+    """
+    Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
+    :param f: list of functions
+    :param y0: list of floats or ints, initial values y(t0)=y0
+    :param t0: float or int, start of interval for parameter t
+    :param t1: float or int, end of interval for parameter t
+    :param h: float or int, step-size
+    :return: two lists of floats, approximation of y at interval t0-t1 in step-size h and interval list
+    """
+    N = int(np.ceil((t1 - t0) / h))
+    v = np.zeros((len(y0), N + 1, 2))
+    y = np.zeros((len(y0), N + 1, 2))
+    t_list = [0] * (N + 1)
+    t_list[0] = t0
+    t = t0
+    v[:, 0, :] = y0[:, 1, :]
+    y[:, 0, :] = y0[:, 0, :]
+    for k in range(1, N + 1):
+        vp = v[:, k - 1, :] + h * f(t, y[:, k - 1, :])
+        yp = y[:, k - 1, :] + h * v[:, k - 1, :]
+
+        for i in range(len(y0)):
+
+            def fixpoint(x):
+                terms = []
+                for j in range(len(x)):
+                    if j != i:
+                        term = (-g * mass[0] * mass[1] * (x[i, :] - x[j, :]) / np.linalg.norm(x[i, :] - x[j, :]) ** 3) / \
+                               mass[i]
+                        terms.append(term)
+                return v[i, k - 1, :] + h * (terms[0] + terms[1]) - x[i, :]
+
+            def fixpoint_deriv(x):
+                terms = []
+                for j in range(len(x)):
+                    if j != i:
+                        term = (g * mass[0] * mass[1] * (
+                                2 * x[i, :] ** 2 - 3 * x[i, :] * x[j, :] + x[j, :] ** 2) / np.linalg.norm(
+                            x[i, :] - x[j, :]) ** (5 / 2)) / mass[i]
+                        terms.append(term)
+                return h * (terms[0] + terms[1]) - 1
+
+            vc = newton_raphson(fixpoint, fixpoint_deriv, yp, 0.0001, 10)[i, :]
+            v[i, k, :] = vc
+            y[i, k, :] = y[i, k - 1, :] + h * v[i, k - 1, :]
+        t = t + h
+        t_list[k] = t
     return y, t_list
 
 
@@ -636,6 +772,28 @@ def backward_euler(f, y0, t0, t1, h):
 
 def generate_figures(method, title, names, colours):
     y, t = method
+    fig = go.Figure(
+        data=[go.Scatter(x=y[0, :, 0], y=y[0, :, 1],
+                         mode="lines", name=names[0],
+                         line=dict(width=2, color=colours[0])),
+              go.Scatter(x=y[1, :, 0], y=y[1, :, 1],
+                         mode="lines", name=names[1],
+                         line=dict(width=2, color=colours[1])),
+              go.Scatter(x=y[2, :, 0], y=y[2, :, 1],
+                         mode="lines", name=names[2],
+                         line=dict(width=2, color=colours[2]))],
+        layout=go.Layout(
+            xaxis=dict(autorange=True, zeroline=False, range=[-2, 2]),
+            yaxis=dict(autorange=True, zeroline=False, range=[-2, 2]),
+            title=title, hovermode="closest"),
+    )
+    return fig
+
+
+def generate_error_figures(method, title, names, colours):
+    y_rk, t_rk = runge_kutta
+    y_meth, t_meth = method
+    y = np.absolute(y_rk - y_meth)
     fig = go.Figure(
         data=[go.Scatter(x=y[0, :, 0], y=y[0, :, 1],
                          mode="lines", name=names[0],

@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from bokeh.plotting import figure, show
 from bokeh.layouts import gridplot
 
