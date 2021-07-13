@@ -61,18 +61,20 @@ inits7 = np.array([[[-1, 0], [p71, p72]],
                    [[1, 0], [p71, p72]],
                    [[0, 0], [-2 * p71, -2 * p72]]])
 
-
 # Initial conditions for real life models
 
 Mear = 6e24  # Mass of Earth in kg
 Msun = 2e30  # Mass of Sun in kg
 Mjup = 1.9e27  # Mass of Jupiter
 Msat = 5.7e26  # Mass of Saturn
+Mmoo = 7.346e22  # Mass of Earth-Moon
+Mven = 4.875e24  # Mass of Venus
+Mnep = 1.024e26  # Mass of Neptun
 
 G = 6.673e-11  # Gravitational Constant
 
 RR = 1.496e11  # Normalizing distance in km (= 1 AU)
-MM = 6e24  # Normalizing mass
+MM = 6e24  # Normalizing mass (mass of earth)
 TT = 365 * 24 * 60 * 60.0  # Normalizing time (1 year)
 
 FF = (G * MM ** 2) / RR ** 2  # Unit force
@@ -84,6 +86,9 @@ Mear = Mear / MM  # Normalized mass of Earth
 Msun = Msun / MM  # Normalized mass of Sun
 Mjup = 500 * Mjup / MM  # Normalized mass of Jupiter/Super Jupiter
 Msat = Msat / MM  # Normalized mass of Saturn
+Mmoo = Mmoo / MM  # Normalized mass of Moon
+Mven = Mven / MM  # Normalized mass of Venus
+Mnep = Mnep / MM
 
 ti = 0  # initial time = 0
 tf = 120  # final time = 120 years
@@ -95,19 +100,28 @@ h = t[2] - t[1]  # time step (uniform)
 
 # Initialization
 
-rear = [1496e8 / RR, 0]  # initial position of earth
+rear = [1, 0]  # initial position of earth
 rjup = [5.2, 0]  # initial position of Jupiter
 rsat = [9.582, 0]
 rsun = [0, 0]
+rmoo = [rear[0] - 0.00257, 0]
+rven = [0.723, 0]
+rnep = [30.047, 0]
 
 magear = np.sqrt(Msun * GG / rear[0])  # Magnitude of Earth's initial velocity
 magjup = 13.06e3 * TT / RR  # Magnitude of Jupiter's initial velocity
 magsat = 9.68e3 * TT / RR  # Magnitude of Saturn's initial velocity
+magmoo = 1.022e3 * TT / RR  # Magnitude of Moon's initial velocity
+magven = 35.02e3 * TT / RR  # Magnitude of Venus' initial velocity
+magnep = 5.43e3 * TT / RR
 
 vear = [0, magear * 1.0]  # Initial velocity vector for Earth.Taken to be along y direction as ri is on x axis.
 vjup = [0, magjup * 1.0]  # Initial velocity vector for Jupiter
 vsat = [0, magsat * 1.0]  # Initial velocity vector for Saturn
 vsun = [0, 0]
+vmoo = [0, magmoo]  # Initial velocity vector for Moon
+vven = [0, magven]  # Initial velocity vector for Venus
+vnep = [0, magnep]
 
 inits8 = np.array([[rsun, vsun],
                    [rsat, vsat],
@@ -117,12 +131,11 @@ mass_szenario4 = [0, 0, 0.00000001]
 
 method_dict = {'forward_euler': 'Explizites Euler-Verfahren', 'backward_euler': 'Implizites Euler-Verfahren'}
 init_dict = {1: inits1, 2: inits2, 3: inits3, 4: inits4, 5: inits5, 6: inits6, 7: inits7, 8: inits8}
-mass_dict = {'sun': Msun, 'sat': Msat, 'jup': Mjup, 'ear': Mear}
-r_dict = {'sun': rsun, 'sat': rsat, 'jup': rjup, 'ear': rear}
-v_dict = {'sun': vsun, 'sat': vsat, 'jup': vjup, 'ear': vear}
-colour_dict = {'sun': 'yellow', 'sat': 'grey', 'jup': 'orange', 'ear': 'blue'}
-name_dict = {'sun': 'Sonne', 'sat': 'Saturn', 'jup': 'Jupiter', 'ear': 'Erde'}
-
+mass_dict = {'sun': Msun, 'sat': Msat, 'jup': Mjup, 'ear': Mear, 'moo': Mmoo, 'ven': Mven, 'nep': Mnep}
+r_dict = {'sun': rsun, 'sat': rsat, 'jup': rjup, 'ear': rear, 'moo': rmoo, 'ven': rven, 'nep': rnep}
+v_dict = {'sun': vsun, 'sat': vsat, 'jup': vjup, 'ear': vear, 'moo': vmoo, 'ven': vven, 'nep': vnep}
+colour_dict = {'sun': 'yellow', 'sat': 'grey', 'jup': 'orange', 'ear': '#4d7bd1', 'moo': 'darkgrey', 'ven': '#d1996f', 'nep': '#2a1a82'}
+name_dict = {'sun': 'Sonne', 'sat': 'Saturn', 'jup': 'Jupiter', 'ear': 'Erde', 'moo': 'Mond', 'ven': 'Venus', 'nep': 'Neptun'}
 
 # Here is were the dash app begins
 # Standard css style sheet recommended by Dash
@@ -207,16 +220,6 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
                                         marks={0: '0', 5: '5', 10: '10',
                                                15: '15', 20: '20', 25: '25', 30: '30'},
                                         value=10
-                                    ),
-                                    drc.NamedRadioItems(
-                                        name='Anzeigen',
-                                        id="error",
-                                        options=[
-                                            {"label": "Bahnen", "value": 1},
-                                            {"label": "Fehler in Vergleich zu Runge-Kutta", "value": 2},
-                                        ],
-                                        value=1,
-                                        style={'margin': '10px 10px 10px 10px'},
                                     ),
                                 ]),
                             dbc.Tabs([
@@ -315,6 +318,10 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
                                                         'value': 'sun'
                                                     },
                                                     {
+                                                        'label': 'Venus',
+                                                        'value': 'ven'
+                                                    },
+                                                    {
                                                         'label': 'Erde',
                                                         'value': 'ear'
                                                     },
@@ -323,12 +330,16 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
                                                         'value': 'moo'
                                                     },
                                                     {
+                                                        'label': 'Jupiter',
+                                                        'value': 'jup'
+                                                    },
+                                                    {
                                                         'label': 'Saturn',
                                                         'value': 'sat'
                                                     },
                                                     {
-                                                        'label': 'Jupiter',
-                                                        'value': 'jup'
+                                                        'label': 'Neptun',
+                                                        'value': 'nep'
                                                     },
                                                 ],
                                                 clearable=False,
@@ -344,6 +355,10 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
                                                         'value': 'sun'
                                                     },
                                                     {
+                                                        'label': 'Venus',
+                                                        'value': 'ven'
+                                                    },
+                                                    {
                                                         'label': 'Erde',
                                                         'value': 'ear'
                                                     },
@@ -352,12 +367,16 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
                                                         'value': 'moo'
                                                     },
                                                     {
+                                                        'label': 'Jupiter',
+                                                        'value': 'jup'
+                                                    },
+                                                    {
                                                         'label': 'Saturn',
                                                         'value': 'sat'
                                                     },
                                                     {
-                                                        'label': 'Jupiter',
-                                                        'value': 'jup'
+                                                        'label': 'Neptun',
+                                                        'value': 'nep'
                                                     },
                                                 ],
                                                 clearable=False,
@@ -373,6 +392,10 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
                                                         'value': 'sun'
                                                     },
                                                     {
+                                                        'label': 'Venus',
+                                                        'value': 'ven'
+                                                    },
+                                                    {
                                                         'label': 'Erde',
                                                         'value': 'ear'
                                                     },
@@ -381,12 +404,16 @@ app.layout = dbc.Container(fluid=True, style={'background-color': '#333399'}, ch
                                                         'value': 'moo'
                                                     },
                                                     {
+                                                        'label': 'Jupiter',
+                                                        'value': 'jup'
+                                                    },
+                                                    {
                                                         'label': 'Saturn',
                                                         'value': 'sat'
                                                     },
                                                     {
-                                                        'label': 'Jupiter',
-                                                        'value': 'jup'
+                                                        'label': 'Neptun',
+                                                        'value': 'nep'
                                                     },
                                                 ],
                                                 clearable=False,
@@ -454,16 +481,17 @@ def update_figure(model, h, t_end, scenario, m1, m2, m3, o1, o2, o3):
     global g
     if model == 1:
         names = ['Objekt 1', 'Objekt 2', 'Objekt 3']
-        colours = ['red', 'blue', 'violet']
+        colours = ['green', 'blue', 'red']
         init_data = init_dict[scenario]
         mass = [m1, m2, m3]
         g = 1
-        fig_expl = generate_figures(forward_euler(f, init_data, t_start, t_end, h), 'Explizites Euler-Verfahren', names,
-                                    colours)
+        fig_expl = generate_figures(forward_euler(f, init_data, t_start, t_end, h), 'Explizites Euler-Verfahren',
+                                          names,
+                                          colours)
         fig_rk = generate_figures(runge_kutta(f, init_data, t_start, t_end, h), 'Runge-Kutta-Verfahren der Stufe 3',
                                   names, colours)
         try:
-            fig_impl = generate_figures(backward_euler1(f, init_data, t_start, t_end, h), 'Implizites Euler-Verfahren',
+            fig_impl = generate_figures(backward_euler(f, init_data, t_start, t_end, h), 'Implizites Euler-Verfahren',
                                         names, colours)
         except:
             fig_impl = fig_not_convergent('Implizites Euler-Verfahren')
@@ -485,7 +513,7 @@ def update_figure(model, h, t_end, scenario, m1, m2, m3, o1, o2, o3):
         fig_rk = generate_figures(runge_kutta(f, init_data, t_start, t_end, h),
                                   'Runge-Kutta-Verfahren der Stufe 3', names, colours)
         try:
-            fig_impl = generate_figures(backward_euler1(f, init_data, t_start, t_end, h), 'Implizites Euler-Verfahren',
+            fig_impl = generate_figures(backward_euler(f, init_data, t_start, t_end, h), 'Implizites Euler-Verfahren',
                                         names, colours)
         except:
             fig_impl = fig_not_convergent('Implizites Euler-Verfahren')
@@ -645,7 +673,7 @@ def newton_raphson(f, g, x0, e, N):
         print('\nNot Convergent.')
 
 
-def backward_euler1(f, y0, t0, t1, h):
+def backward_euler(f, y0, t0, t1, h):
     """
     Explicit Euler method for systems of differential equations: y' = f(t, y); with f,y,y' n-dimensional vectors.
     :param f: list of functions
@@ -753,7 +781,7 @@ def fpi(f, t, yk, h, steps):
     return x
 
 
-def backward_euler(f, y0, t0, t1, h):
+def backward_euler_0(f, y0, t0, t1, h):
     N = int(np.ceil((t1 - t0) / h))
     t = t0
     v = np.zeros((len(y0), N + 1, 2))
@@ -791,7 +819,7 @@ def generate_figures(method, title, names, colours):
 
 
 def generate_error_figures(method, title, names, colours):
-    y_rk, t_rk = runge_kutta
+    y_rk, t_rk = runge_kutta(f, inits1, 0, 10, 0.01)
     y_meth, t_meth = method
     y = np.absolute(y_rk - y_meth)
     fig = go.Figure(
